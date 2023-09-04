@@ -51,7 +51,7 @@ const routes: RouteRecordRaw[] = [
           {
             path: 'artist',
             name: 'artist',
-            component: () => import('@/views/artist/artist.vue'),
+            component: () => import('@/views/discover/artist/artist.vue'),
             meta: {
               title: 'artist',
             },
@@ -59,7 +59,7 @@ const routes: RouteRecordRaw[] = [
           {
             path: 'album',
             name: 'album',
-            component: () => import('@/views/album/album.vue'),
+            component: () => import('@/views/discover/album/album.vue'),
             meta: {
               title: 'album',
             },
