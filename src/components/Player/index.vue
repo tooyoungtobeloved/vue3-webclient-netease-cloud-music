@@ -87,7 +87,7 @@ export default defineComponent({
   components: { PlayList },
   setup() {
     const lyricStore = useLyricStore()
-    const songid = ref(1897929515)
+    const songid = ref(421423806)
     const audioRef = ref<HTMLAudioElement | null>(null)
     const pbarRef = ref<HTMLDivElement | null>(null)
     const {
@@ -117,7 +117,6 @@ export default defineComponent({
     const handleCanplay = () => {
       if (audioRef.value) {
         lyricStore.totalTime = audioRef.value.duration
-        console.log(lyricStore.totalTime)
       }
     }
     const audioTimeUpdate = () => {
@@ -126,16 +125,15 @@ export default defineComponent({
       }
     }
     const handleStatusBarClick = (e: MouseEvent) => {
-      console.log(pbarRef.value?.clientWidth)
       const pbarWidth = pbarRef.value?.clientWidth
-      console.log(e.offsetX)
-      console.log(e.offsetY)
       if (pbarWidth) {
         // const posPercent = ((e.offsetX / pbarWidth) * 100).toFixed(4)
         playtime.value = Number(
           ((e.offsetX / pbarWidth) * totalTime.value).toFixed(3),
         )
-        console.log(playtime.value)
+        if (audioRef.value) {
+          audioRef.value.currentTime = playtime.value
+        }
       }
     }
     return {

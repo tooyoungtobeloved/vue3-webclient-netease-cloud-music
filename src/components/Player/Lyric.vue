@@ -1,18 +1,15 @@
 <template>
-  <h3>{{ activeLineIndex }}</h3>
   <div ref="lyricRef" class="listlyric">
     <p
       v-for="(lyc, index) in lyricList"
       :key="index"
       :class="{
-        active:
-          typeof lyc.time === 'number' &&
-          playtime >= Number(lyc.time) &&
-          playtime < Number(lyricList[index + 1].time),
+        active: calcActive(index),
       }"
       :data-time="lyc.time"
     >
       {{ lyc.text }}
+      {{ lyc.time }}
     </p>
   </div>
 </template>
@@ -34,30 +31,54 @@ export default defineComponent({
       const nextIndex = lyricList.value.findIndex(
         (lyc) => playtime.value <= Number(lyc.time),
       )
-      if (nextIndex === -1) {
-        return nextIndex
-      }
-      if (playtime.value === lyricList.value[nextIndex].time) {
-        return nextIndex
-      } else {
-        return nextIndex - 1
-      }
+      return nextIndex
     })
 
-    watch(activeLineIndex, (value) => {
-      if (
-        lyricList.value.length > 7 &&
-        value > 3 &&
-        lyricList.value.length - value > 3
-      ) {
-        if (lyricRef.value) {
-          // lyricRef.value.scrollTop = 32 * (activeLineIndex.value - 3)
-          animate({ timing: linear, duration: 0.5, draw })
-        }
+    watch(activeLineIndex, (value, old) => {
+      if (lyricRef.value) {
+        const currentScrollTop = lyricRef.value?.scrollTop
+        animate({
+          timing: linear,
+          duration: 700,
+          draw: (progress) => {
+            const gap = calcGap(value, old)
+            console.log(value, old, gap)
+            lyricRef.value!.scrollTop = currentScrollTop + progress * gap * 32
+          },
+        })
       }
     })
-    function draw(progress: number) {
-      lyricRef.value!.scrollTop = (activeLineIndex.value - 4 + progress) * 32
+    const calcActive = computed(() => {
+      return (index: number) => {
+        return (
+          activeLineIndex.value === index ||
+          (activeLineIndex.value === -1 && index === lyricList.value.length - 1)
+        )
+      }
+    })
+    function calcGap(value: number, old: number): number {
+      let start = old
+      let end = value
+      if (value === -1) {
+        value = lyricList.value.length - 1
+      }
+      if (value < 3) {
+        end = 3
+      }
+      if (old < 3) {
+        start = 3
+      }
+      if (value > lyricList.value.length - 3) {
+        end = lyricList.value.length - 3
+      }
+      if (old > lyricList.value.length - 3) {
+        start = lyricList.value.length - 3
+      }
+      if (value === -1) {
+        end = lyricList.value.length - 4
+      }
+
+      return end - start
     }
     onMounted(async () => {
       const { lyricClientHeight, lyricScrollHeight } = storeToRefs(lyricStore)
@@ -70,6 +91,7 @@ export default defineComponent({
           ...lc,
           time: transforStandardTimeStringtTotime(lc.time as string),
         }))
+        .filter((lc) => lc.text || lc.time)
       nextTick(() => {
         const clientHeight = lyricRef.value?.clientHeight
         const scrollHeight = lyricRef.value?.scrollHeight
@@ -102,7 +124,7 @@ export default defineComponent({
       return matchObj
     }
     const fetchLyric = async (): Promise<lrc> => {
-      return fetch('http://10.15.1.55:9000/lyric?id=1897929515', {
+      return fetch('http://10.15.1.55:9000/lyric?id=421423806', {
         credentials: 'include',
       })
         .then((res) => res.json())
@@ -115,6 +137,7 @@ export default defineComponent({
       lyricList,
       playtime,
       activeLineIndex,
+      calcActive,
     }
   },
 })

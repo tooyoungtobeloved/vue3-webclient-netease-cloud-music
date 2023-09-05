@@ -25,5 +25,5 @@ export function animate({
   })
 }
 export function linear(timeFraction: number): number {
-  return Math.pow(timeFraction, 2)
+  return timeFraction
 }
