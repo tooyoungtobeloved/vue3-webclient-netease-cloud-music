@@ -1,6 +1,10 @@
 <template>
-  <div class="scrollBar">
-    <span class="barbtn" :style="{ height: `${barHeight}px` }" />
+  <div ref="scrollBarRef" class="scrollBar">
+    <span
+      class="barbtn"
+      :style="{ height: `${barHeight}px`, top: `${barTop}px` }"
+      @click="handleClick"
+    />
   </div>
 </template>
 
@@ -11,10 +15,38 @@ import { storeToRefs } from 'pinia'
 export default defineComponent({
   setup() {
     const lyricStore = useLyricStore()
-    const { barHeight } = storeToRefs(lyricStore)
-    onMounted(() => {})
+    const scrollBarRef = ref<HTMLDivElement | null>(null)
+    const barTop = ref<number>(0)
+    const { barHeight, lyricList, activeLineIndex } = storeToRefs(lyricStore)
+
+    const handleClick = (e: MouseEvent) => {
+      console.log(e.pageX)
+    }
+    onMounted(() => {
+      const scrollBarHeight = scrollBarRef.value?.clientHeight
+      if (scrollBarHeight) {
+        const gap = scrollBarHeight - barHeight.value
+        const perStepHeight = +(
+          (1 / (lyricList.value.length - 7)) *
+          gap
+        ).toFixed(4) // 一屏7行歌词，所以可滚动的部分是list.length - 7
+        console.log(perStepHeight)
+        watch(activeLineIndex, (value) => {
+          if (value > 3) {
+            barTop.value = (value - 3) * perStepHeight
+            console.log(barTop.value)
+          }
+          if (value > lyricList.value.length - 3) {
+            barTop.value = gap
+          }
+        })
+      }
+    })
     return {
       barHeight,
+      scrollBarRef,
+      barTop,
+      handleClick,
     }
   },
 })

@@ -2,11 +2,19 @@
   <div class="playlist-bd">
     <div class="listbdc">
       <ul class="slist-ul">
-        <li>
+        <li
+          v-for="song in playlist"
+          :key="song.id"
+          class="songItem"
+          :class="[song.id === currentSongId ? 'curs' : '', 'playlistItem']"
+          @click="playSong(song.id)"
+        >
           <div class="col col-1">
-            <div class="playicn" />
+            <div :class="['playicn', song.id === currentSongId ? 'db' : '']" />
           </div>
-          <div class="col col-2">Again</div>
+          <div class="col col-2">
+            {{ song.name }}
+          </div>
           <div class="col col-3">
             <div class="icons">
               <i class="icn icn-del">删除</i>
@@ -15,8 +23,12 @@
               <i class="icn icn-add">收藏</i>
             </div>
           </div>
-          <div class="col col-4">王极</div>
-          <div class="col col-5">02:02</div>
+          <div class="col col-4">
+            {{ song.singer }}
+          </div>
+          <div class="col col-5">
+            {{ song.duration }}
+          </div>
           <div class="col col-6">
             <a href="/" class="icn icn-src">来源</a>
           </div>
@@ -34,15 +46,48 @@
 import { defineComponent } from 'vue'
 import Lyric from './Lyric.vue'
 import ScrollBar from './ScrollBar.vue'
+import { usePlaylistStore } from '@/stores/playlist'
 export default defineComponent({
   components: { Lyric, ScrollBar },
   setup() {
-    return {}
+    const playlistStore = usePlaylistStore()
+    const { currentSongId } = storeToRefs(playlistStore)
+    function formatMs(ms: number): string {
+      const s = Math.trunc(ms / 1000)
+      return (
+        Math.trunc(s / 60)
+          .toString()
+          .padStart(2, '0') +
+        ':' +
+        (s % 60).toString().padStart(2, '0')
+      )
+    }
+    const playlist = playlistStore.playlist.map((item) => {
+      return {
+        title: item.title,
+        duration: formatMs(item.duration),
+        name: item.name,
+        id: item.id,
+        singer: item.artists.map((art) => art.name).join('/'),
+      }
+    })
+    function playSong(id: number): void {
+      playlistStore.currentSongId = id
+      console.log(playlistStore.currentSongId)
+    }
+    return {
+      playlist,
+      playSong,
+      currentSongId,
+    }
   },
 })
 </script>
 
 <style lang="less" scoped>
+.songItem:hover {
+  background-color: rgba(0, 0, 0, 0.4);
+}
 .playlist-bd {
   position: absolute;
   left: 0;
@@ -91,6 +136,9 @@ export default defineComponent({
       height: 13px;
       background: url('../../assets/img/playlist.png') no-repeat;
       background-position: -182px 0;
+    }
+    .playicn.db {
+      display: block;
     }
   }
   .col-2,
@@ -180,5 +228,12 @@ export default defineComponent({
   height: 260px;
   background: #000;
   opacity: 0.5;
+}
+.curs {
+  background-color: rgba(0, 0, 0, 0.3);
+}
+.playlistItem {
+  float: left;
+  width: 100%;
 }
 </style>

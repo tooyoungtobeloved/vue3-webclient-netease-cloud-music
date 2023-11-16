@@ -48,22 +48,22 @@ const routes: RouteRecordRaw[] = [
               title: 'djradio',
             },
           },
-          {
-            path: 'artist',
-            name: 'artist',
-            component: () => import('@/views/discover/artist/artist.vue'),
-            meta: {
-              title: 'artist',
-            },
-          },
-          {
-            path: 'album',
-            name: 'album',
-            component: () => import('@/views/discover/album/album.vue'),
-            meta: {
-              title: 'album',
-            },
-          },
+          // {
+          //   path: 'artist',
+          //   name: 'artist',
+          //   component: () => import('@/views/artist/artist.vue'),
+          //   meta: {
+          //     title: 'artist',
+          //   },
+          // },
+          // {
+          //   path: 'album',
+          //   name: 'album',
+          //   component: () => import('@/views/album/album.vue'),
+          //   meta: {
+          //     title: 'album',
+          //   },
+          // },
         ],
       },
     ],

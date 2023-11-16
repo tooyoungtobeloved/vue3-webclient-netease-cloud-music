@@ -17,37 +17,36 @@
 <script lang="ts">
 import { defineComponent, nextTick, computed, watch } from 'vue'
 import { useLyricStore } from '@/stores'
-import { transforStandardTimeStringtTotime } from '@/utils/format'
 import { linear, animate } from '@/utils/util'
 export default defineComponent({
   setup() {
     const lyricStore = useLyricStore()
     const lyricRef = ref<null | HTMLElement>(null)
-    const lyricList = ref<{ text: string | number; time: string | number }[]>(
-      [],
-    )
-    const { playtime } = storeToRefs(lyricStore)
-    const activeLineIndex = computed(() => {
-      const nextIndex = lyricList.value.findIndex(
-        (lyc) => playtime.value <= Number(lyc.time),
-      )
-      return nextIndex
-    })
 
-    watch(activeLineIndex, (value, old) => {
+    const { playtime, activeLineIndex, lyricList } = storeToRefs(lyricStore)
+
+    watch(activeLineIndex, (value) => {
       if (lyricRef.value) {
         const currentScrollTop = lyricRef.value?.scrollTop
         animate({
           timing: linear,
           duration: 700,
           draw: (progress) => {
-            const gap = calcGap(value, old)
-            console.log(value, old, gap)
-            lyricRef.value!.scrollTop = currentScrollTop + progress * gap * 32
+            // const scrollTop = getScrollTop()
+            let commingScrollTop = (value - 3) * 32
+            if (value < 3) {
+              commingScrollTop = 0
+            }
+            if (value > lyricList.value.length - 3) {
+              commingScrollTop = (lyricList.value.length - 3) * 32
+            }
+            const gap = commingScrollTop - currentScrollTop
+            lyricRef.value!.scrollTop = currentScrollTop + progress * gap
           },
         })
       }
     })
+
     const calcActive = computed(() => {
       return (index: number) => {
         return (
@@ -56,82 +55,19 @@ export default defineComponent({
         )
       }
     })
-    function calcGap(value: number, old: number): number {
-      let start = old
-      let end = value
-      if (value === -1) {
-        value = lyricList.value.length - 1
-      }
-      if (value < 3) {
-        end = 3
-      }
-      if (old < 3) {
-        start = 3
-      }
-      if (value > lyricList.value.length - 3) {
-        end = lyricList.value.length - 3
-      }
-      if (old > lyricList.value.length - 3) {
-        start = lyricList.value.length - 3
-      }
-      if (value === -1) {
-        end = lyricList.value.length - 4
-      }
-
-      return end - start
-    }
     onMounted(async () => {
       const { lyricClientHeight, lyricScrollHeight } = storeToRefs(lyricStore)
-
-      const { lrc } = await fetchLyric()
-      lyricList.value = lrc.lyric
-        .split('\n')
-        .map((lc) => handleLyric(lc))
-        .map((lc) => ({
-          ...lc,
-          time: transforStandardTimeStringtTotime(lc.time as string),
-        }))
-        .filter((lc) => lc.text || lc.time)
       nextTick(() => {
-        const clientHeight = lyricRef.value?.clientHeight
-        const scrollHeight = lyricRef.value?.scrollHeight
-        lyricClientHeight.value = clientHeight as number
-        lyricScrollHeight.value = scrollHeight as number
+        setTimeout(() => {
+          const clientHeight = lyricRef.value?.clientHeight
+          const scrollHeight = lyricRef.value?.scrollHeight
+          lyricClientHeight.value = clientHeight as number
+          lyricScrollHeight.value = scrollHeight as number
+          console.log(scrollHeight)
+        }, 10)
       })
     })
-    interface lrc {
-      lrc: {
-        version: number
-        lyric: string
-      }
-      [propName: string]: any
-    }
 
-    const handleLyric = (
-      lyric: string,
-    ): { time: string; text: string | number } => {
-      const matchObj = {
-        // [00:00.00] xxxxxxxx
-        time: lyric,
-        text: /^\[\d{2}:\d{2}\.\d{2,3}\]/.test(lyric)
-          ? lyric.replace(/^\[\d{2}:\d{2}\.\d{2,3}\]/, '')
-          : lyric,
-      }
-      const matchStr = lyric.match(/^\[\d{2}:\d{2}\.\d{2,3}\]/)
-      if (matchStr) {
-        matchObj.time = matchStr[0].replace(/\[|\]/g, '')
-      }
-      return matchObj
-    }
-    const fetchLyric = async (): Promise<lrc> => {
-      return fetch('http://10.15.1.55:9000/lyric?id=421423806', {
-        credentials: 'include',
-      })
-        .then((res) => res.json())
-        .then((res) => {
-          return res
-        })
-    }
     return {
       lyricRef,
       lyricList,

@@ -27,3 +27,7 @@ export function animate({
 export function linear(timeFraction: number): number {
   return timeFraction
 }
+
+export function clampValue(value: number, max: number, min: number): number {
+  return Math.min(min, Math.max(value, max))
+}

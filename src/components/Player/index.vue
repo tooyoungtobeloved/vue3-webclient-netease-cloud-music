@@ -26,9 +26,11 @@
         </div>
         <div class="play">
           <div class="words">
-            <a href="/" class="name">Again</a>
+            <a href="/" class="name">{{ currentSong?.name }}</a>
             <span class="by">
-              <a href="/" class="">王极</a>
+              <a href="/" class="">{{
+                currentSong?.artists.map((a) => a.name).join('/')
+              }}</a>
             </span>
             <a href="" class="src" title="来自榜单" />
           </div>
@@ -39,14 +41,6 @@
                 <span class="btn" />
               </div>
             </div>
-            <audio
-              ref="audioRef"
-              :src="`https://music.163.com/song/media/outer/url?id=${songid}.mp3`"
-              @canplay="handleCanplay"
-              @timeupdate="audioTimeUpdate"
-            >
-              浏览器不支持 audio 标签。
-            </audio>
             <div class="time">
               <span class="current">{{ currentTimeString }}</span>
               <span class="total"> / {{ totalTimeString }}</span>
@@ -67,29 +61,43 @@
             </div>
           </div>
           <span class="icn icon-sound" @click="toggleSound" />
-          <span class="loop icn" title="循环" />
+          <span class="icn loop" title="循环" />
           <span class="add">
             <span class="tip">已添加到播放列表</span>
-            <span class="playlist icn">1</span>
+            <span class="icn playlist">1</span>
           </span>
         </div>
       </div>
       <PlayList />
+      <audio
+        ref="audioRef"
+        :src="`https://music.163.com/song/media/outer/url?id=${songid}.mp3`"
+        @canplay="handleCanplay"
+        @timeupdate="audioTimeUpdate"
+      >
+        浏览器不支持 audio 标签。
+      </audio>
     </div>
   </div>
 </template>
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import { useLyricStore } from '@/stores'
+import { useLyricStore, usePlaylistStore } from '@/stores'
+// import { usePlaylistStore } from '@/stores'
+import { transforStandardTimeStringtTotime } from '@/utils/format'
 import PlayList from './PlayList.vue'
 export default defineComponent({
   components: { PlayList },
   setup() {
     const lyricStore = useLyricStore()
-    const songid = ref(421423806)
+    const playlistStore = usePlaylistStore()
+    const { currentSongId: songid, currentSong } = storeToRefs(playlistStore)
     const audioRef = ref<HTMLAudioElement | null>(null)
     const pbarRef = ref<HTMLDivElement | null>(null)
+    const lyricList = ref<{ text: string | number; time: string | number }[]>(
+      [],
+    )
     const {
       totalTimeString,
       currentTimeString,
@@ -136,6 +144,52 @@ export default defineComponent({
         }
       }
     }
+    interface lrc {
+      lrc: {
+        version: number
+        lyric: string
+      }
+      [propName: string]: any
+    }
+
+    const handleLyric = (
+      lyric: string,
+    ): { time: string; text: string | number } => {
+      const matchObj = {
+        // [00:00.00] xxxxxxxx
+        time: lyric,
+        text: /^\[\d{2}:\d{2}\.\d{2,3}\]/.test(lyric)
+          ? lyric.replace(/^\[\d{2}:\d{2}\.\d{2,3}\]/, '')
+          : lyric,
+      }
+      const matchStr = lyric.match(/^\[\d{2}:\d{2}\.\d{2,3}\]/)
+      if (matchStr) {
+        matchObj.time = matchStr[0].replace(/\[|\]/g, '')
+      }
+      return matchObj
+    }
+    const fetchLyric = async (): Promise<lrc> => {
+      return fetch('http://127.0.0.1:9000/lyric?id=' + songid.value, {
+        credentials: 'include',
+      })
+        .then((res) => res.json())
+        .then((res) => {
+          return res
+        })
+    }
+    onMounted(async () => {
+      const { lrc } = await fetchLyric()
+      lyricList.value = lrc.lyric
+        .split('\n')
+        .map((lc) => handleLyric(lc))
+        .map((lc) => ({
+          ...lc,
+          time: transforStandardTimeStringtTotime(lc.time as string),
+        }))
+        .filter((lc) => lc.text || lc.time)
+      lyricStore.lyricList = lyricList.value
+    })
+
     return {
       ...toRefs(data),
       toggleSound,
@@ -150,6 +204,7 @@ export default defineComponent({
       playPercent,
       songid,
       pbarRef,
+      currentSong,
     }
   },
 })
